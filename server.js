@@ -1,79 +1,129 @@
-const http = require('http');
-const querystring = require('querystring');
-const discord = require('discord.js');
+const querystring = require("querystring");
+const path = require("path");
+const discord = require("discord.js");
 const client = new discord.Client();
+const config = require("./config.json");
+const prefix = config.prefix;
+const settings = require("./settings.json");
+const ytdl = require("ytdl-core");
 
-http.createServer(function(req, res){
-  if (req.method == 'POST'){
-    var data = "";
-    req.on('data', function(chunk){
-      data += chunk;
-    });
-    req.on('end', function(){
-      if(!data){
-        res.end("No post data");
-        return;
-      }
-      var dataObject = querystring.parse(data);
-      console.log("post:" + dataObject.type);
-      if(dataObject.type == "wake"){
-        console.log("Woke up in post");
-        res.end();
-        return;
-      }
-      res.end();
-    });
-  }
-  else if (req.method == 'GET'){
-    res.writeHead(200, {'Content-Type': 'text/plain'});
-    res.end('Discord Bot is active now\n');
-  }
-}).listen(3000);
+const Hypixel = require("hypixel-api-reborn");
+const hypixel = new Hypixel.Client(config.hypixelapi);
+const hypixelCommands = require("./commands/hypixelCommands.js")
 
-client.on('ready', message =>{
-  console.log('Bot準備完了～');
-  client.user.setPresence({ game: { name: 'げーむ' } });
+//npm install discord.js-commando
+//npm install discord.js
+//npm install ytdl-core
+//npm install hypixel-api-reborn
+
+client.once("ready", message => {
+  console.log("Bot準備完了～");
+  client.user.setPresence({ game: { name: "Bedwars 4v4v4v4" } });
 });
 
-client.on('message', message =>{
-  if (message.author.id == client.user.id || message.author.bot){
-    return;
-  }
-  if(message.isMemberMentioned(client.user)){
-    sendReply(message, "呼びましたか？");
-    return;
-  }
-  if (message.content.match(/にゃ～ん|にゃーん/)){
-    let text = "にゃ～ん";
-    sendMsg(message.channel.id, text);
-    return;
+if (config.token == undefined) {
+  console.log("DISCORD_BOT_TOKENが設定されていません。");
+  process.exit(0);
+}
+
+client.login(config.token);
+
+
+
+/*
+client.on("message" , async msg =>{
+  if(msg.content.match(prefix + "clear")){
+    msg.reply("いくつメッセージを削除しますか？");
+    var filter = msg2 => msg2.author.id === msg.author.id;
+    var collected = await msg.channel.awaitMessages(filter, {max: 1, time: 10 * 1000})
+    var response = collected.first()
+    if(!response){
+      msg.reply("タイムアウトしました。\n最初からやり直してください")}else{
+        var intNum = parseInt(response.content);８
+      if(Number.isFinite(intNum) && 0< intNum){
+        if(response.content <101){
+          var delNumber = intNum + 1;
+          response.channel.bulkDelete(delNumber)
+          .then(response.reply(delNumber + "個のメッセージを削除しました。"))
+        }else{
+          return response.reply("数がでかすぎます。\n数値を100以下にしてください。\n最初からやり直してください")
+        }
+      }else{
+        msg.reply("自然数を入力してください。\n最初からやり直してください")
+      }
+    }
+  }});
+  */
+
+client.on("message", async msg => {
+  if (msg.content === "embed") {
+    msg.channel
+      .send({
+        embed: {
+          title: "メッセージ削除の確認",
+          fields: [
+            {
+              name: `あなたは個のメッセージを削除しようとしています。`,
+              value:
+                "本当に削除しますか？\n削除する場合は✓を、キャンセルする場合は×を選択してください。"
+            }
+          ],
+          color: 4303284
+        }
+      })
+      .then(msg2 => {
+        msg2.react("✅").then(msg2.react("❌"));
+        client.on("messageReactionAdd", (reaction, user) => {
+          if (user.id === msg.author.id) {
+            msg.channel.send(`${reaction.emoji.name} をリアクションしました`);
+          }
+        });
+      });
   }
 });
-
-if(process.env.DISCORD_BOT_TOKEN == undefined){
- console.log('DISCORD_BOT_TOKENが設定されていません。');
- process.exit(0);
+/*
+client.on("presenceUpdate" , (oldPresence , newPresence) =>{
+ // let puser = oldPresence.user.id
+  let oldStatus = oldPresence.status;
+  let newStatus = newPresence.status;
+//if(puser != "738763915994857563") return;
+if(oldStatus != "online" && newStatus === "online" ){
+  let ch = client.channels.cache.get("786221980650700800")
+  ch.send(`<@739006634533060702>大和さんが${oldStatus}から${newStatus}になりました！`)
+  discord.DMChannel()
 }
+});
+*/
+client.on("message", msg => {
+  if (!msg.content.startsWith(prefix + "mcid")) return;
+  let mcid = msg.content.split(" ");
+  let playerName = mcid[1];
+  hypixel.getPlayer(playerName).then(player => {
+    msg.channel.send(player.level);
+  });
+});
 
-client.login( process.env.DISCORD_BOT_TOKEN );
+client.setInterval(() => {
+  let ch = client.channels.cache.get("858655976718204971");
+  hypixel.getWatchdogStats().then(wdr => {
+    let wdrd = wdr.byWatchdogRollingDay;
+    let std = wdr.byStaffRollingDay;
+    let emb = new discord.MessageEmbed()
+      .setColor("#FF0000")
+      .setTitle("Ban人数情報")
+      .setDescription("24時間以内にBanされた人数を表示します")
+      .addFields(
+        { name: "WatchdogによるBan", value: `${wdrd}人`, inline: true },
+        { name: "スタッフによるBan", value: `${std}人`, inline: true }
+      )
+      .setFooter("24時間ごとに更新されます")
+      .setTimestamp();
+    ch.send(emb);
+  });
+}, 24 * 60 * 60 * 1000);
 
-function sendReply(message, text){
-  message.reply(text)
-    .then(console.log("リプライ送信: " + text))
-    .catch(console.error);
-}
-
-function sendMsg(channelId, text, option={}){
-  client.channels.get(channelId).send(text, option)
-    .then(console.log("メッセージ送信: " + text + JSON.stringify(option)))
-    .catch(console.error);
-}
-
-client.on('message',msg =>{
-  if(msg.channel.id == '786221980650700800' && msg.author.id == '739006634533060702' ){
-    msg.delete({ timeout: 50000 })
-    .then(console.log("msg deleted after 5 seconds."))
-    .catch(console.error);
-  }
-    
-})
+client.on("message" , msg =>{
+  if(msg.author.bot) return;
+  if(!msg.content.startsWith(prefix + "hp")) return;
+  hypixelCommands.call(msg);
+});
