@@ -25,9 +25,11 @@ const mcid = args[2];
 
 switch (command) {
     case "bw" :
+    case "bedwars" :
         bedwars(msg , mcid);
         break;
     case "sw" :
+    case "skywars" :
         skywars(msg , mcid);
         break;
     case "status" :
@@ -47,14 +49,27 @@ function now (msg , mcid) {
         let pOnline = player.online;
         let pGame = player.game;
         let pMap = player.map;
-        if (pOnline == true) {pOnline = "オンライン";}
-        else {pOnline = "オフライン";}
-        let embed = new discord.MessageEmbed()
-                    .setColor("#FF0000")
+        let pColor;
+        let embed;
+        if (pOnline == true) {
+            pOnline = "オンライン" , 
+            pColor = "#00ff00" , 
+            embed = new discord.MessageEmbed()
+                .setColor(pColor)
+                .setTitle(`${mcid}様のステータス`)
+                .setDescription("現在のステータスを表示します")
+                .addFields({name : "オンライン状況" , value : `${pOnline}`} , 
+                           {name : "プレイしているゲーム" , value : `${pGame}` , inline : true}, 
+                           {name : "プレイしているマップ" , value : `${pMap}` , inline : true})
+                .setTimestamp();
+        } else {pOnline = "オフライン" , 
+                pColor = "#ff0000" , 
+                embed = new discord.MessageEmbed()
+                      .setColor(pColor)
                       .setTitle(`${mcid}様のステータス`)
                       .setDescription("現在のステータスを表示します")
-                      .addFields({name : "オンライン状況" , value : `${pOnline}`} , {name : "プレイしているゲーム" , value : `${pGame}` , inline : true}, {name : "プレイしているマップ" , value : `${pMap}` , inline : true})
-                      .setTimestamp();
+                      .addFields({name : "オンライン状況" , value : `${pOnline}`})
+                      .setTimestamp();}
         msg.channel.send(embed)
     })
 };
@@ -161,23 +176,55 @@ function status (msg , mcid) {
         let stLevel = st.level;
         let stLevelfloor = Math.floor(stLevel)
         let stRank = st.rank;
-        let stFL = st.firstLogin;
-        let stLLI = st.lastLogin;
-        let stLLO = st.lastLogout;
+        let stFL = st.firstLogin.toLocaleString();
+        let stLLI = st.lastLogin.toLocaleString();
+        let stLLO = st.lastLogout.toLocaleString();
         let stAP = st.achievementPoints;
         let stkarma = st.karma;
         let stRPG = st.recentlyPlayedGame;
         let stUL = st.userLanguage;
         let stRPT = st.ranksPurchaseTime;
-        let stRPTVip = stRPT.VIP;
-        let stRPTVipPlus = stRPT.VIP_PLUS;
+        let stRPTVip = stRPT.VIP.toLocaleString();
+        let stRPTVipPlus = stRPT.VIP_PLUS.toLocaleString();
         let stRPTMvp = stRPT.MVP;
-        let stRPTMvpPlus = stRPT.MVP_PLUS;
-   //     let stColor = st.plusColor.toHex();
+        let stRPTMvpPlus = stRPT.MVP_PLUS.toLocaleString();
+        let stColor;
+        switch(stRank) {
+            case "Admin" :
+                stColor = "#ff0000";
+                break;
+            case "Helper" :
+                    stColor = "#0000ff";
+                break;    
+            case "Moderator" :
+                stColor = "#000080";
+                break;
+            case "YouTube" :
+                stColor = "#800000";
+                break;
+            case "MVP++" :
+                stColor = "#00ffff";
+                break;
+            case "MVP" :
+                stColor = "#00ffff";
+                break;
+            case "MVP+" :
+                stColor = "#40e0d0";
+                break;
+            case "VIP" :
+                stColor = "#00ff00";
+                break;
+            case "VIP+" :
+                stColor = "#32cd32";
+                break;
+            case "Default" :
+                stColor = "#808080";
+        };
+
         
         let embed = new discord.MessageEmbed()
         .setTitle(`${mcid}様のステータス`)
-     //   .setColor(stColor)
+        .setColor(stColor)
         .setDescription(`[${stLevelfloor}✫] ${mcid}`)
         .addFields({name : "Hypixelレベル" , value : `${stLevelfloor}` , inline : true} ,
         {name : "ランク" , value : `${stRank}` , inline : true} ,
