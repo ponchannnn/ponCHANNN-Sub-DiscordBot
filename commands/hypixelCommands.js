@@ -184,10 +184,10 @@ function status (msg , mcid) {
         let stRPG = st.recentlyPlayedGame;
         let stUL = st.userLanguage;
         let stRPT = st.ranksPurchaseTime;
-        let stRPTVip = stRPT.VIP;
-        let stRPTVipPlus = stRPT.VIP_PLUS;
+        let stRPTVip = stRPT.VIP.toLocaleString();
+        let stRPTVipPlus = stRPT.VIP_PLUS.toLocaleString();
         let stRPTMvp = stRPT.MVP;
-        let stRPTMvpPlus = stRPT.MVP_PLUS;
+        let stRPTMvpPlus = stRPT.MVP_PLUS.toLocaleString();
         let stColor;
         switch(stRank) {
             case "Admin" :
