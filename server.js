@@ -103,8 +103,9 @@ client.on("message", msg => {
   });
 });
 
-client.setInterval(() => {
+function banInfo () {
   let ch = client.channels.cache.get("858655976718204971");
+
   hypixel.getWatchdogStats().then(wdr => {
     let wdrd = wdr.byWatchdogRollingDay;
     let std = wdr.byStaffRollingDay;
@@ -120,9 +121,23 @@ client.setInterval(() => {
       .setTimestamp();
     ch.send(emb);
   });
-}, 24 * 60 * 60 * 1000);
+};
 
-client.on("message" , msg =>{
+
+
+client.setTimeout(() =>
+ {banInfo();
+  client.setInterval(() => {
+    banInfo();
+  } , 24 * 60 * 60 * 1000);
+} , new Date().setHours(12, 0, 0, 0) - new Date());
+
+
+
+
+
+client.on("message" , msg => {
+  if(msg.channel.id !== "859214771454607380") return;
   if(msg.author.bot) return;
   if(!msg.content.startsWith(prefix + "hp")) return;
   hypixelCommands.call(msg);
