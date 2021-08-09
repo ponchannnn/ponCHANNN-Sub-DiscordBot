@@ -1,14 +1,9 @@
-const querystring = require("querystring");
-const path = require("path")
+
 const discord = require("discord.js");
 const client = new discord.Client();
 const config = require("../config.json");
-const prefix = config.prefix;
 const Hypixel = require("hypixel-api-reborn");
-const { strict } = require("assert");
 const hypixel = new Hypixel.Client(config.hypixelapi);
-const statusChannelID = "859214771454607380"
-const statusChannel = client.channels.cache.get(statusChannelID)
 
 module.exports = {
     call : call,
@@ -23,24 +18,31 @@ const args = msg.content.split(" ");
 const command = args[1];
 const mcid = args[2];
 
-switch (command) {
+let Uuid;
+const hPlayer = hypixel.getPlayer(mcid).then(
+        player =>{
+            let Uuid = player.uuid;
+            return Uuid;
+        })
+
+switch (command) {                                                          
     case "bw" :
     case "bedwars" :
-        bedwars(msg , mcid);
+        bedwars(msg , mcid , Uuid);
         break;
     case "sw" :
     case "skywars" :
-        skywars(msg , mcid);
+        skywars(msg , mcid , Uuid);
         break;
     case "status" :
-        status(msg , mcid);
+        status(msg , mcid , Uuid);
         break;
     case "now" :
-        now(msg , mcid);
+        now(msg , mcid , Uuid);
         break;
         
 }
-}
+    return Uuid;};
 
 
 function now (msg , mcid) {
@@ -76,8 +78,6 @@ function now (msg , mcid) {
 
 
 function bedwars (msg , mcid) {
-    if(!msg.channel.id == statusChannel) return;
-    
     hypixel.getPlayer(mcid)
     .then(player =>{
         let bw = player.stats.bedwars;
@@ -169,7 +169,7 @@ function skywars (msg , mcid) {
 };
 
 
-function status (msg , mcid) {
+function status (msg , mcid , Uuid) {
     hypixel.getPlayer(mcid)
     .then(player =>{
         let st = player;
@@ -184,10 +184,18 @@ function status (msg , mcid) {
         let stRPG = st.recentlyPlayedGame;
         let stUL = st.userLanguage;
         let stRPT = st.ranksPurchaseTime;
-        let stRPTVip = stRPT.VIP.toLocaleString();
-        let stRPTVipPlus = stRPT.VIP_PLUS.toLocaleString();
+        let stRPTVip = stRPT.VIP
+        if (stRPTVip !== null) stRPTVip = stRPTVip.toLocaleString();
+                            else   {stRPTVip = "まだ購入していないか、飛ばしてハイランクを購入されました。";}
+        let stRPTVipPlus = stRPT.VIP_PLUS
+        if (stRPTVipPlus !== null) stRPTVipPlus = stRPTVipPlus.toLocaleString();
+                               else    {stRPTVipPlus = "まだ購入していないか、飛ばしてハイランクを購入されました。";}
         let stRPTMvp = stRPT.MVP;
-        let stRPTMvpPlus = stRPT.MVP_PLUS.toLocaleString();
+        if (stRPTMvp !== null) stRPTMvp = stRPTMvp.toLocaleString();
+                          else     {stRPTMvp = "まだ購入していないか、飛ばしてハイランクを購入されました。";}
+        let stRPTMvpPlus = stRPT.MVP_PLUS
+        if (stRPTMvpPlus !== null) {stRPTMvpPlus = stRPTMvpPlus.toLocaleString();}
+                               else   { stRPTMvpPlus = "まだ購入していないか、飛ばしてハイランクを購入されました。";}
         let stColor;
         switch(stRank) {
             case "Admin" :
@@ -221,10 +229,12 @@ function status (msg , mcid) {
                 stColor = "#808080";
         };
 
-        
+        let uuidUrl = (`https://crafatar.com/renders/body/${Uuid}.png`)
+
         let embed = new discord.MessageEmbed()
         .setTitle(`${mcid}様のステータス`)
         .setColor(stColor)
+        .setImage(uuidUrl)
         .setDescription(`[${stLevelfloor}✫] ${mcid}`)
         .addFields({name : "Hypixelレベル" , value : `${stLevelfloor}` , inline : true} ,
         {name : "ランク" , value : `${stRank}` , inline : true} ,
@@ -240,7 +250,8 @@ function status (msg , mcid) {
         {name : "MVPを購入した日" , value : `${stRPTMvp}` , inline : true} ,
         {name : "MVP+を購入した日" , value : `${stRPTMvpPlus}` , inline : true} ,
         )
-
+        
         msg.channel.send(embed);
     })
 };
+
